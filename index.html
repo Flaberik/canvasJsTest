@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Canvas tutorial</title>
+    <script type="text/javascript">
+      var width; // Ширина
+      var height; // высота
+      var racket_hei = 120;
+      var canvas;
+      var ctx;
+      function draw() {
+
+        var canvas = document.getElementById('tutorial');
+        width = document.body.clientWidth;
+        height = 600;
+        canvas.width = width;
+        canvas.height = height;
+
+        //console.log(document.body.clientHeight)
+        if (canvas.getContext) {
+          // rgb(128, 128, 128);
+          ctx = canvas.getContext('2d');
+
+          clear()
+        }
+      }
+
+      function clear(){
+        console.log(ctx)
+          ctx.fillStyle = 'rgb(0, 0, 0)';
+          ctx.strokeStyle = 'rgb(128, 128, 128)';
+          ctx.fillRect(0, 0, width, height);
+
+          ctx.beginPath();
+          ctx.moveTo(0, height/2);
+          ctx.lineTo(width, height/2);
+          ctx.moveTo(width/2, 0);
+          ctx.lineTo(width/2, height);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(width/2, height/2, 100, 0, Math.PI * 2, true);
+          ctx.stroke();
+          player_render(20,height/2-racket_hei/2);
+          player_render(width-40,height/2-racket_hei/2)
+      }
+
+      function player_render(x,y){
+        ctx.fillStyle = 'rgb(128, 128, 128)';
+        ctx.fillRect(x, y, 20, racket_hei);
+      }
+
+    </script>
+    <style type="text/css">
+      canvas { border: 1px solid black; }
+    </style>
+  </head>
+  <body onload="draw();" style="padding:0px;">
+    <canvas id="tutorial" width="1" height="1" style="margin-top: 20px;"></canvas>
+  </body>
+</html>
+asd

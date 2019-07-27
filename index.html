@@ -7,9 +7,13 @@
   <script type="text/javascript">
   var width; //Ширина канваса
   var height; //Высота канваса
+
   var racket_hei = 120; //Высота ракетки
 
   var game; //Булиевая перемменная отвечает за завершение игры
+  var pitch; //Если True подает первый игрок иначе, подает второй игрок
+  var pause = false;
+
   var canvas; //Сам канвас
   var ctx; //Контекст канваса
 
@@ -24,15 +28,13 @@
   var point_p2 = 0; //Количество очков у второго игрока
 
   //Кординаты мяча по осям X и Y
-  var boll_x;
-  var boll_y;
+  var ball_x;
+  var ball_y;
 
-  var boll_dX; //отвечает за скорость и напрвеление движения мяча по оси X
-  var boll_dY; //отвечает за скорость и напрвеление движения мяча по оси Y
+  var ball_dX = 0; //отвечает за скорость и напрвеление движения мяча по оси X
+  var ball_dY = 0; //отвечает за скорость и напрвеление движения мяча по оси Y
 
-  var pitch; //Если True подает первый игрок, если False то второй
-
-  var boll_radius = 20;
+  var ball_radius = 20;
 
   //Инициализация всех переменных и запуск игрового цикла
   function initialize_game() {
@@ -43,8 +45,14 @@
     canvas.width = width;
     canvas.height = height;
 
-    boll_x = width/2;
-    boll_y = height/2;
+    if(getRandomInt(0, 11) >= 5){
+        pitch = true;
+    }else{
+        pitch = false;
+    }
+
+    ball_x = width/2;
+    ball_y = height/2;
 
     x_p1 = 20;
     x_p2 = width-40;
@@ -55,24 +63,56 @@
     if (canvas.getContext) {
       ctx = canvas.getContext('2d');
       game = true;
+      move_ball_to_pitcher();
       game_loop();
     }
   }
 
+  function move_ball_to_pitcher(){
+      if(ball_dX == 0 && ball_dY == 0){
+          if(pitch){
+              ball_x = x_p1 + 40;
+              ball_y = y_p1 + (racket_hei/2);
+          }else{
+              ball_x = x_p2 - 20;
+              ball_y = y_p2 + (racket_hei/2);
+          }
+      }
+  }
+
   //Функция отрисовки мяча на канвасе
-  function render_boll(){
-    ctx.fillStyle = 'rgb(128, 128, 128)';
+  function render_ball(){
+    ctx.fillStyle = '#544e46';
     ctx.beginPath();
-    ctx.arc(width/2, height/2, boll_radius, 0, Math.PI * 2, true);
+    ctx.arc(ball_x, ball_y, ball_radius, 0, Math.PI * 2, true);
     ctx.fill();
+  }
+
+  function move_ball(){
+      //console.log("dY: " + ball_dY + " dX: " + ball_dX)
+      if((ball_x + ball_dX - ball_radius >= 0 && ball_x + ball_dX + ball_radius <= width) && (ball_x + ball_dX - ball_radius - 20>= x_p1 && ball_x + ball_dX + ball_radius <= x_p2)){
+          ball_x += ball_dX;
+      }else{
+          ball_dX = -ball_dX;
+      }
+
+      if(ball_y + ball_dY >= 0 && ball_y + ball_dY <= height){
+          ball_y += ball_dY;
+      }else{
+          ball_dY = -ball_dY;
+      }
   }
 
   //Игроковой цикл, работате в асинхронном режиме
   async function game_loop(){
     while(game){
-      render();
-      move_player()
-      //console.log(getRandomInt(0,10))
+      if(!pause){
+        render();
+        move_ball_to_pitcher();
+        move_ball();
+      }
+
+      key_listener();
       await sleep(1000/60); // {1000ms / 60} ~ 60FPS, здержка
     }
   }
@@ -88,11 +128,11 @@
     render_scene();
     player_render(x_p1, y_p1);
     player_render(x_p2, y_p2)
-    render_boll();
+    render_ball();
   }
 
   //Функция отрисовки игрового поля
-  //В нее входят только цвет канваса и линии на нем
+  //В нее входят цвет канваса и линии на нем
   function render_scene(){
     ctx.fillStyle = 'rgb(0, 0, 0)';
     ctx.strokeStyle = 'rgb(128, 128, 128)';
@@ -105,7 +145,7 @@
     ctx.lineTo(width/2, height);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(boll_x, boll_y, 100, 0, Math.PI * 2, true);
+    ctx.arc(width/2, height/2, 100, 0, Math.PI * 2, true);
     ctx.stroke();
 
     ctx.fillStyle = 'rgb(128, 100, 100)';
@@ -122,48 +162,40 @@
 
   //Функция движения ракеток игроков, вызывается из игрового цикла
   //Процеряет массив со списком нажатых клавишь
-  function move_player(){
-    if(keys[0]){
-      switch(keys[0]){
-        case 87: // KeyW
-          y_p1 = update_dY(y_p1, -2);
-          break;
-        case 83: //KeyS
-          y_p1 = update_dY(y_p1, 2);
-          break;
-        case 38: //ArrowUp
-          y_p2 = update_dY(y_p2, -2);
-          break;
-        case 40: //ArrowDown
-          y_p2 = update_dY(y_p2, 2);
-          break;
-      }
+  function key_listener(){
+    for (var i = 0; i < keys.length; i++) {
+        if(keys[i] == 32 && (ball_dX == 0 && ball_dY == 0)){
+            if(pitch){
+                ball_dX = 1;
+            }else{
+                ball_dX = -1;
+            }
+        }
+
+        switch(keys[i]){
+          case 87: // KeyW
+            y_p1 = update_dY(y_p1, -2);
+            break;
+          case 83: //KeyS
+            y_p1 = update_dY(y_p1, 2);
+            break;
+          case 38: //ArrowUp
+            y_p2 = update_dY(y_p2, -2);
+            break;
+          case 40: //ArrowDown
+            y_p2 = update_dY(y_p2, 2);
+            break;
+        }
     }
 
-    if(keys[1]){
-      switch(keys[1]){
-        case 87: // KeyW
-          y_p1 = update_dY(y_p1, -2);
-          break;
-        case 83: //KeyS
-          y_p1 = update_dY(y_p1, 2);
-          break;
-        case 38: //ArrowUp
-          y_p2 = update_dY(y_p2, -2);
-          break;
-        case 40: //ArrowDown
-          y_p2 = update_dY(y_p2, 2);
-          break;
-      }
-    }
   }
 
   //Функция определяющая, не выходит ли ракетка за пределы игрового поля по сои Y
   //Принимает параметры Y, step. Где Y - это кордината ракетки, а step - это как скорость так и направление движения (вниз/вверх)
   function update_dY(y, step){
-    if((y+step + (racket_hei) <= height && step > 0) || (y+step >= 0 && step < 0))
-      return (dy+step);
-    return dy;
+    if((y + step + (racket_hei) <= height && step > 0) || (y + step >= 0 && step < 0))
+      return (y + step);
+    return y;
   }
 
   //Подобна реализация обработки клавиш, позволяет играть сразу нескольким игрокам с одной клавиатуры
@@ -173,6 +205,7 @@
   $(document).keydown(function(e){
      //Если клавиша нажимается в первые, ее код записуется в массив keys[]
     var code = e.which;
+    //console.log(code);
     if (keys.indexOf(code)<0){
       keys.push(code);
     }
@@ -181,14 +214,15 @@
   //Обработчик события keyup, все тот же jquery
   $(document).keyup(function(e){
      //Поселе того как клаваиша была отпущена, она удаляется из массива keys[]
+    if(e.which == 27){
+     pause = !pause;
+    }
     keys.splice(keys.indexOf(e.which),1);
   });
 
   function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
   }
-
-
 
   </script>
   <style type="text/css">

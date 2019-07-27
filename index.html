@@ -5,19 +5,36 @@
   <title>Canvas tutorial</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
   <script type="text/javascript">
-  var width; // Ширина
-  var height; // высота
-  var racket_hei = 120;
+  var width; //Ширина канваса
+  var height; //Высота канваса
+  var racket_hei = 120; //Высота ракетки
 
-  var game;
-  var canvas;
-  var ctx;
+  var game; //Булиевая перемменная отвечает за завершение игры
+  var canvas; //Сам канвас
+  var ctx; //Контекст канваса
 
-  var dX_p1;
-  var dX_p2;
-  var dY_p1;
-  var dY_p2;
+  //Кординаты ракеты первого и второго игрока по оси Х
+  var x_p1;
+  var x_p2;
+  //Кординаты ракеты первого и второго игрока по оси Y
+  var y_p1;
+  var y_p2;
 
+  var point_p1 = 0; //Количество очков у первого игрока
+  var point_p2 = 0; //Количество очков у второго игрока
+
+  //Кординаты мяча по осям X и Y
+  var boll_x;
+  var boll_y;
+
+  var boll_dX; //отвечает за скорость и напрвеление движения мяча по оси X
+  var boll_dY; //отвечает за скорость и напрвеление движения мяча по оси Y
+
+  var pitch; //Если True подает первый игрок, если False то второй
+
+  var boll_radius = 20;
+
+  //Инициализация всех переменных и запуск игрового цикла
   function initialize_game() {
     var canvas = document.getElementById('tutorial');
     width = document.body.clientWidth;
@@ -26,11 +43,14 @@
     canvas.width = width;
     canvas.height = height;
 
-    dX_p1 = 20;
-    dX_p2 = width-40;
+    boll_x = width/2;
+    boll_y = height/2;
 
-    dY_p1 = height/2-racket_hei/2;
-    dY_p2 = height/2-racket_hei/2;
+    x_p1 = 20;
+    x_p2 = width-40;
+
+    y_p1 = height/2-racket_hei/2;
+    y_p2 = height/2-racket_hei/2;
 
     if (canvas.getContext) {
       ctx = canvas.getContext('2d');
@@ -39,24 +59,40 @@
     }
   }
 
+  //Функция отрисовки мяча на канвасе
+  function render_boll(){
+    ctx.fillStyle = 'rgb(128, 128, 128)';
+    ctx.beginPath();
+    ctx.arc(width/2, height/2, boll_radius, 0, Math.PI * 2, true);
+    ctx.fill();
+  }
+
+  //Игроковой цикл, работате в асинхронном режиме
   async function game_loop(){
     while(game){
       render();
       move_player()
-      await sleep(1000/60); // {1000ms / 60} ~ 60FPS
+      //console.log(getRandomInt(0,10))
+      await sleep(1000/60); // {1000ms / 60} ~ 60FPS, здержка
     }
   }
 
+  //Stack Owerflow, функция вызова задержки
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  //Главная функция отрисовки, в которой вызываются функции рендера других объектов
+  //Данная функция вызывается из игрового цикла
   function render(){
     render_scene();
-    player_render(dX_p1, dY_p1);
-    player_render(dX_p2, dY_p2)
+    player_render(x_p1, y_p1);
+    player_render(x_p2, y_p2)
+    render_boll();
   }
 
+  //Функция отрисовки игрового поля
+  //В нее входят только цвет канваса и линии на нем
   function render_scene(){
     ctx.fillStyle = 'rgb(0, 0, 0)';
     ctx.strokeStyle = 'rgb(128, 128, 128)';
@@ -68,61 +104,91 @@
     ctx.moveTo(width/2, 0);
     ctx.lineTo(width/2, height);
     ctx.stroke();
-
     ctx.beginPath();
-    ctx.arc(width/2, height/2, 100, 0, Math.PI * 2, true);
+    ctx.arc(boll_x, boll_y, 100, 0, Math.PI * 2, true);
     ctx.stroke();
+
+    ctx.fillStyle = 'rgb(128, 100, 100)';
+    ctx.font = 'bold 50px Arial';
+    ctx.fillText(point_p1, width/2-30, 50);
+    ctx.fillText(point_p2, width/2+3, 50);
   }
 
+  //Функция отрисовки ракетки игрока, принимает параметры Х,Y игрока
   function player_render(x,y){
     ctx.fillStyle = 'rgb(128, 128, 128)';
     ctx.fillRect(x, y, 20, racket_hei);
   }
 
-  async function move_player(){
+  //Функция движения ракеток игроков, вызывается из игрового цикла
+  //Процеряет массив со списком нажатых клавишь
+  function move_player(){
     if(keys[0]){
       switch(keys[0]){
         case 87: // KeyW
-        dY_p1 = update_dY(dY_p1, -2);
-        break;
+          y_p1 = update_dY(y_p1, -2);
+          break;
         case 83: //KeyS
-        dY_p1 = update_dY(dY_p1, 2);
-        break;
+          y_p1 = update_dY(y_p1, 2);
+          break;
+        case 38: //ArrowUp
+          y_p2 = update_dY(y_p2, -2);
+          break;
+        case 40: //ArrowDown
+          y_p2 = update_dY(y_p2, 2);
+          break;
       }
     }
-    
+
     if(keys[1]){
       switch(keys[1]){
+        case 87: // KeyW
+          y_p1 = update_dY(y_p1, -2);
+          break;
+        case 83: //KeyS
+          y_p1 = update_dY(y_p1, 2);
+          break;
         case 38: //ArrowUp
-        dY_p2 = update_dY(dY_p2, -2);
-        break;
+          y_p2 = update_dY(y_p2, -2);
+          break;
         case 40: //ArrowDown
-        dY_p2 = update_dY(dY_p2, 2);
-        break;
+          y_p2 = update_dY(y_p2, 2);
+          break;
       }
     }
   }
 
-  function update_dY(dy, step){
-    if((dy+step + (racket_hei) <= height && step > 0) || (dy+step >= 0 && step < 0))
-    return (dy+step);
+  //Функция определяющая, не выходит ли ракетка за пределы игрового поля по сои Y
+  //Принимает параметры Y, step. Где Y - это кордината ракетки, а step - это как скорость так и направление движения (вниз/вверх)
+  function update_dY(y, step){
+    if((y+step + (racket_hei) <= height && step > 0) || (y+step >= 0 && step < 0))
+      return (dy+step);
     return dy;
   }
 
-
-  var keys = [];
-
+  //Подобна реализация обработки клавиш, позволяет играть сразу нескольким игрокам с одной клавиатуры
+  var keys = []; // Хранит коды нажатых клавишь
+  //Обработчик события keydown, написано на jquery хотя принципиальной разници
+  //между обработчиком на чистом js я не заметил
   $(document).keydown(function(e){
+     //Если клавиша нажимается в первые, ее код записуется в массив keys[]
     var code = e.which;
     if (keys.indexOf(code)<0){
       keys.push(code);
     }
   });
 
-
+  //Обработчик события keyup, все тот же jquery
   $(document).keyup(function(e){
+     //Поселе того как клаваиша была отпущена, она удаляется из массива keys[]
     keys.splice(keys.indexOf(e.which),1);
   });
+
+  function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+  }
+
+
 
   </script>
   <style type="text/css">

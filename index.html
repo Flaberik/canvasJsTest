@@ -13,6 +13,7 @@
   var game; //Булиевая перемменная отвечает за завершение игры
   var pitch; //Если True подает первый игрок иначе, подает второй игрок
   var pause = false;
+  var ball_move = false;
 
   var canvas; //Сам канвас
   var ctx; //Контекст канваса
@@ -25,7 +26,7 @@
   var y_p2;
   var dY_p1 = 0;
   var dY_p2 = 0;
-  var speed_racket = 2;
+  var speed_racket = 3;
 
   var point_p1 = 0; //Количество очков у первого игрока
   var point_p2 = 0; //Количество очков у второго игрока
@@ -51,11 +52,6 @@
     canvas.width = width;
     canvas.height = height;
 
-    if(getRandomInt(0, 11) >= 5){
-        pitch = true;
-    }else{
-        pitch = false;
-    }
 
     ball_x = width/2;
     ball_y = height/2;
@@ -69,9 +65,22 @@
     if (canvas.getContext) {
       ctx = canvas.getContext('2d');
       game = true;
-      move_ball_to_pitcher();
+      random_pitcher();
       game_loop();
     }
+  }
+
+  function random_pitcher(){
+    if(getRandomInt(0, 11) >= 5){
+        pitch = true;
+    }else{
+        pitch = false;
+    }
+
+    ball_dX = 0;
+    ball_dY = 0;
+
+    move_ball_to_pitcher();
   }
 
   function move_ball_to_pitcher(){
@@ -95,37 +104,76 @@
   }
 
   function move_ball(){
-      //(ball_x + ball_dX - ball_radius >= 0 && ball_x + ball_dX + ball_radius <= width) ||
-      if((ball_x + ball_dX - ball_radius - 20>= x_p1 && ball_x + ball_dX + ball_radius <= x_p2)){
-          ball_x += ball_dX;
-      }else if(!(ball_x + ball_dX - ball_radius >= 0 && ball_x + ball_dX + ball_radius <= width)){
-          ball_dX=0;
-          ball_dY=0;
-      }else{
-          ball_dX = -ball_dX;
-      }
+    // console.log('ball_x + ball_dX <= x_p1 ' + (ball_x + ball_dX <= x_p1));
+    // console.log('ball_y + ball_dY <= y_p1 ' + (ball_y + ball_dY >= y_p1));
+    // console.log('ball_y + ball_dY >= y_p1 + racket_hei ' + (ball_y + ball_dY <= y_p1 + racket_hei));
+    // console.log('');
+    ball_x += ball_dX;
+    ball_y += ball_dY;
+    if((ball_x - ball_radius - 20 <= x_p1 && ball_y >= y_p1 && ball_y <= y_p1 + racket_hei) ||
+      (ball_x + ball_radius >= x_p2 && ball_y + ball_dY >= y_p2 && ball_y <= y_p2 + racket_hei)){
+        ball_dX = -ball_dX;
+    }else if(ball_x + ball_dX - ball_radius <= 0 || ball_x  + ball_dX + ball_radius >= width){
+        if(ball_dX > 0)
+          point_p1++;
+        else
+          point_p2++;
 
-      if(ball_x + ball_dX - ball_radius - 20 <= x_p1 || ball_x + ball_dX + ball_radius >= x_p2){
-          if(dY_p1 != 0 && ball_dX < 0)
-              ball_dY =  dY_p1;
-          else if(dY_p2 != 0 && ball_dX > 0)
-              ball_dY =  dY_p2;
-      }
+        random_pitcher();
+    }
+    if((ball_x - ball_radius - 20 <= x_p1 && ball_y >= y_p1 && ball_y <= y_p1 + racket_hei) ||
+      (ball_x + ball_radius >= x_p2 && ball_y + ball_dY >= y_p2 && ball_y <= y_p2 + racket_hei)){
+        if(dY_p1 != 0 && ball_dX < 0)
+            ball_dY =  dY_p1;
+        else if(dY_p2 != 0 && ball_dX > 0)
+            ball_dY =  dY_p2;
+    }
 
-      //console.log(ball_dY)
-      if(ball_y + ball_dY >= 0 && ball_y + ball_dY <= height){
-          ball_y += ball_dY;
-      }else{
-          ball_dY = -ball_dY;
-      }
+    if(ball_dX == 0 && ball_dY == 0){
+      if(pitch)
+        ball_y += dY_p1;
+      else
+        ball_y += dY_p2;
+    }
+
+    if(ball_y + ball_dY >= 0 && ball_y + ball_dY <= height){
+        ball_y += ball_dY;
+    }else{
+        ball_dY = -ball_dY;
+    }
+
   }
+
+//   function move_ball(){
+//     //(ball_x + ball_dX - ball_radius >= 0 && ball_x + ball_dX + ball_radius <= width) ||
+//     if((ball_x + ball_dX - ball_radius - 20>= x_p1 && ball_x + ball_dX + ball_radius <= x_p2)){
+//         ball_x += ball_dX;
+//     }else if(!(ball_x + ball_dX - ball_radius >= 0 && ball_x + ball_dX + ball_radius <= width)){
+//         ball_dX=0;
+//         ball_dY=0;
+//     }else{
+//         ball_dX = -ball_dX;
+//     }
+//     if(ball_x + ball_dX - ball_radius - 20 <= x_p1 || ball_x + ball_dX + ball_radius >= x_p2){
+//         if(dY_p1 != 0 && ball_dX < 0)
+//             ball_dY =  dY_p1;
+//         else if(dY_p2 != 0 && ball_dX > 0)
+//             ball_dY =  dY_p2;
+//     }
+//     //console.log(ball_dY)
+    // if(ball_y + ball_dY >= 0 && ball_y + ball_dY <= height){
+    //     ball_y += ball_dY;
+    // }else{
+    //     ball_dY = -ball_dY;
+    // }
+// }
 
   //Игроковой цикл, работате в асинхронном режиме
   async function game_loop(){
     while(game){
       if(!pause){
         render();
-        move_ball_to_pitcher();
+        //move_ball_to_pitcher();
         move_ball();
       }
 
@@ -181,13 +229,14 @@
   //Процеряет массив со списком нажатых клавишь
   function key_listener(){
     for (var i = 0; i < keys.length; i++) {
-        if(keys[i] == 32 && (ball_dX == 0 && ball_dY == 0)){
+        if(keys[i] == 32 && ball_dX == 0 && ball_dY == 0){
             if(pitch){
                 ball_dX = speed_ball;
                 ball_dY = dY_p1;
             }else{
                 ball_dX = -speed_ball;
                 ball_dY = dY_p2;
+
             }
         }
 
